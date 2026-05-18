@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e1117">
+<title>wicalyu.com</title>
+<meta name="description" content="Wical 嘅雜項小站 — 一啲一次性、非產品嘅工具同手帳。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="wicalyu.com">
+<meta property="og:description" content="一啲一次性、非產品嘅小工具同手帳。">
+<meta property="og:url" content="https://wicalyu.com/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230e1117'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='%237aa2f7' font-family='monospace'%3Ew%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#0e1117; --card:#161b22; --line:#272d36;
+    --fg:#e6edf3; --dim:#8b949e; --accent:#7aa2f7; --live:#3fb950; --soon:#d29922;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--bg); color:var(--fg);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang HK","Noto Sans CJK HK",sans-serif;
+    line-height:1.6; min-height:100vh;
+    padding:max(7vh,3rem) 1.25rem 4rem;
+    display:flex; justify-content:center;
+  }
+  .wrap{width:100%; max-width:640px}
+  header{margin-bottom:2.5rem}
+  h1{font-size:1.9rem; letter-spacing:-.02em; font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  h1 .dot{color:var(--accent)}
+  .sub{color:var(--dim); margin-top:.5rem; font-size:.95rem}
+  .grid{display:flex; flex-direction:column; gap:.85rem}
+  a.card{
+    display:block; text-decoration:none; color:inherit;
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:1.1rem 1.2rem; transition:border-color .15s, transform .12s;
+  }
+  a.card:hover{border-color:var(--accent)}
+  a.card:active{transform:scale(.985)}
+  .row{display:flex; align-items:center; gap:.6rem}
+  .ttl{font-weight:600; font-size:1.06rem; flex:1}
+  .badge{
+    font-size:.7rem; font-weight:600; padding:.15rem .55rem; border-radius:999px;
+    border:1px solid currentColor; white-space:nowrap;
+  }
+  .badge.live{color:var(--live)}
+  .badge.soon{color:var(--soon)}
+  .desc{color:var(--dim); font-size:.9rem; margin-top:.35rem}
+  .arrow{color:var(--dim); font-size:1.1rem}
+  footer{margin-top:3rem; color:var(--dim); font-size:.8rem; text-align:center}
+  footer code{font-family:ui-monospace,Menlo,monospace; color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>wicalyu<span class="dot">.</span>com</h1>
+    <p class="sub">一啲一次性、非產品嘅小工具同手帳。</p>
+  </header>
+
+  <main class="grid" id="grid"></main>
+
+  <footer>
+    加新項目：喺 <code>index.html</code> 嘅 <code>PROJECTS</code> 加一行 →
+    一個 subdomain CNAME 指去 <code>wical112.github.io</code> 就得。
+  </footer>
+</div>
+
+<script>
+  // 加新雜項：喺度加一個 object 就得。status: "live" | "soon"
+  const PROJECTS = [
+    {
+      title: "福岡・九州 旅遊手帳",
+      desc: "行程 / 開支 / 連結 / 打包 — 可編輯、離線、分享連結跨裝置。",
+      url: "https://fukuoka.wicalyu.com/",
+      status: "soon"
+    },
+    {
+      title: "台灣卡店地圖",
+      desc: "台灣 TCG 卡店行程地圖。",
+      url: "https://wical112.github.io/taiwan-card-shops/",
+      status: "live"
+    }
+  ];
+
+  const BADGE = { live: ["live","上線"], soon: ["soon","設定中"] };
+
+  document.getElementById("grid").innerHTML = PROJECTS.map(p => {
+    const [cls, label] = BADGE[p.status] || BADGE.soon;
+    return `<a class="card" href="${p.url}">
+      <div class="row">
+        <span class="ttl">${p.title}</span>
+        <span class="badge ${cls}">${label}</span>
+        <span class="arrow">→</span>
+      </div>
+      <div class="desc">${p.desc}</div>
+    </a>`;
+  }).join("");
+</script>
+</body>
+</html>
