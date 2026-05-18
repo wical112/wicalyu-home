@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0e1117">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
 <title>wicalyu.com</title>
 <meta name="description" content="Wical 嘅雜項小站 — 一啲一次性、非產品嘅工具同手帳。">
 <meta property="og:type" content="website">
@@ -14,7 +16,8 @@
 <style>
   :root{
     --bg:#0e1117; --card:#161b22; --line:#272d36;
-    --fg:#e6edf3; --dim:#8b949e; --accent:#7aa2f7; --live:#3fb950; --soon:#d29922;
+    --fg:#e6edf3; --dim:#8b949e; --accent:#7aa2f7;
+    --live:#3fb950; --wip:#d29922; --archived:#8b949e;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{-webkit-text-size-adjust:100%}
@@ -31,72 +34,175 @@
   h1 .dot{color:var(--accent)}
   .sub{color:var(--dim); margin-top:.5rem; font-size:.95rem}
   .grid{display:flex; flex-direction:column; gap:.85rem}
+
   a.card{
     display:block; text-decoration:none; color:inherit;
     background:var(--card); border:1px solid var(--line); border-radius:14px;
-    padding:1.1rem 1.2rem; transition:border-color .15s, transform .12s;
+    padding:1.1rem 1.2rem;
+    transition:border-color .15s ease-out, transform .15s ease-out;
   }
-  a.card:hover{border-color:var(--accent)}
+  a.card:hover{border-color:var(--accent); transform:translateY(-1px)}
   a.card:active{transform:scale(.985)}
+  a.card:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
   .row{display:flex; align-items:center; gap:.6rem}
   .ttl{font-weight:600; font-size:1.06rem; flex:1}
   .badge{
-    font-size:.7rem; font-weight:600; padding:.15rem .55rem; border-radius:999px;
-    border:1px solid currentColor; white-space:nowrap;
+    display:inline-flex; align-items:center; gap:.4rem;
+    font-size:.72rem; font-weight:600; padding:.15rem .55rem;
+    border-radius:999px; border:1px solid currentColor; white-space:nowrap;
+  }
+  .badge .dot{
+    width:7px; height:7px; border-radius:50%;
+    background:currentColor; flex:none;
   }
   .badge.live{color:var(--live)}
-  .badge.soon{color:var(--soon)}
+  .badge.wip{color:var(--wip)}
+  .badge.archived{color:var(--archived)}
+  .arrow{color:var(--dim); font-size:1.1rem; flex:none}
   .desc{color:var(--dim); font-size:.9rem; margin-top:.35rem}
-  .arrow{color:var(--dim); font-size:1.1rem}
+
+  .meta{
+    display:flex; align-items:center; gap:.5rem;
+    margin-top:.5rem; font-size:.72rem; color:var(--dim);
+  }
+  .tags{display:flex; gap:.5rem; flex-wrap:wrap; flex:1; min-width:0}
+  .added{flex:none}
+
+  /* archived — 降權但唔靠 opacity（多重訊號：weight + 無 accent hover + scale + label） */
+  a.card.is-archived .ttl{font-weight:500}
+  a.card.is-archived:hover{border-color:var(--line); transform:scale(.99)}
+  a.card.is-archived{transform:scale(.99)}
+
+  .group-sep{
+    display:flex; align-items:center; gap:.75rem;
+    margin:1.4rem 0 .15rem; color:var(--dim); font-size:.75rem;
+  }
+  .group-sep::before,.group-sep::after{
+    content:""; flex:1; height:1px; background:var(--line);
+  }
+
+  .empty{
+    text-align:center; color:var(--dim);
+    padding:3rem 1rem; font-size:.95rem; line-height:1.8;
+  }
+  .empty .big{font-size:1.6rem; display:block; margin-bottom:.4rem}
+  .empty code{font-family:ui-monospace,Menlo,monospace; color:var(--accent)}
+
   footer{margin-top:3rem; color:var(--dim); font-size:.8rem; text-align:center}
   footer code{font-family:ui-monospace,Menlo,monospace; color:var(--accent)}
+
+  @media (prefers-reduced-motion: reduce){
+    a.card{transition:none}
+    a.card:hover,a.card:active,a.card.is-archived,
+    a.card.is-archived:hover{transform:none}
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <h1>wicalyu<span class="dot">.</span>com</h1>
-    <p class="sub">一啲一次性、非產品嘅小工具同手帳。</p>
+    <p class="sub" id="sub">一啲一次性、非產品嘅小工具同手帳。</p>
   </header>
 
   <main class="grid" id="grid"></main>
 
   <footer>
-    加新項目：喺 <code>index.html</code> 嘅 <code>PROJECTS</code> 加一行 →
+    加新項目：喺 <code>index.html</code> 嘅 <code>PROJECTS</code> 加一個 object →
     一個 subdomain CNAME 指去 <code>wical112.github.io</code> 就得。
   </footer>
 </div>
 
 <script>
-  // 加新雜項：喺度加一個 object 就得。status: "live" | "soon"
+  // 加新雜項：加一個 object。schema:
+  //   slug   唯一, = subdomain
+  //   status "live" | "wip" | "archived"   // 落架 = 直接由 array 移除（連 DNS 一齊清）
+  //   tags   string[]（最多顯 3 個）
+  //   added  "YYYY-MM"（排序用）
   const PROJECTS = [
     {
+      slug: "fukuoka",
       title: "福岡・九州 旅遊手帳",
       desc: "行程 / 開支 / 連結 / 打包 — 可編輯、離線、分享連結跨裝置。",
       url: "https://fukuoka.wicalyu.com/",
-      status: "soon"
+      status: "live",
+      tags: ["旅行", "PWA"],
+      added: "2026-05"
     },
     {
+      slug: "cards",
       title: "台灣卡店地圖",
       desc: "台灣 Pokémon / One Piece 官方賽事卡店地圖，離線可用、一撳導航。",
       url: "https://cards.wicalyu.com/",
-      status: "soon"
+      status: "live",
+      tags: ["地圖", "TCG", "PWA"],
+      added: "2026-05"
     }
   ];
 
-  const BADGE = { live: ["live","上線"], soon: ["soon","設定中"] };
+  const ORDER = ["live", "wip", "archived"];
+  const BADGE = {
+    live:     ["live", "上線"],
+    wip:      ["wip", "整緊"],
+    archived: ["archived", "已封存"]
+  };
 
-  document.getElementById("grid").innerHTML = PROJECTS.map(p => {
-    const [cls, label] = BADGE[p.status] || BADGE.soon;
-    return `<a class="card" href="${p.url}">
+  const esc = s => String(s).replace(/[&<>"]/g,
+    c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+
+  function cardHTML(p){
+    const [cls, label] = BADGE[p.status] || BADGE.wip;
+    const archived = p.status === "archived";
+    const tags = (p.tags || []).slice(0, 3)
+      .map(t => "#" + esc(t)).join(" ");
+    const metaBits = [];
+    if (tags) metaBits.push(`<span class="tags">${tags}</span>`);
+    if (p.added) metaBits.push(`<span class="added">${esc(p.added)}</span>`);
+    const meta = metaBits.length
+      ? `<div class="meta">${metaBits.join("")}</div>` : "";
+    return `<a class="card${archived ? " is-archived" : ""}" href="${esc(p.url)}"
+      aria-label="${esc(p.title)}（${label}）">
       <div class="row">
-        <span class="ttl">${p.title}</span>
-        <span class="badge ${cls}">${label}</span>
-        <span class="arrow">→</span>
+        <span class="ttl">${esc(p.title)}</span>
+        <span class="badge ${cls}"><span class="dot" aria-hidden="true"></span>${label}</span>
+        <span class="arrow" aria-hidden="true">→</span>
       </div>
-      <div class="desc">${p.desc}</div>
+      <div class="desc">${esc(p.desc)}</div>
+      ${meta}
     </a>`;
-  }).join("");
+  }
+
+  function render(){
+    const grid = document.getElementById("grid");
+
+    if (PROJECTS.length === 0){
+      grid.innerHTML = `<div class="empty">
+        <span class="big">🗃️</span>
+        仲未有小站<br>
+        喺 <code>index.html</code> 嘅 <code>PROJECTS</code> 加一個 object 就會喺度出現。
+      </div>`;
+      return;
+    }
+
+    let html = "";
+    for (const status of ORDER){
+      const group = PROJECTS
+        .filter(p => p.status === status)
+        .sort((a, b) => String(b.added || "").localeCompare(String(a.added || "")));
+      if (!group.length) continue;
+      if (status === "archived")
+        html += `<div class="group-sep">封存</div>`;
+      html += group.map(cardHTML).join("");
+    }
+    grid.innerHTML = html;
+
+    const n = PROJECTS.filter(p => p.status === "live" || p.status === "wip").length;
+    document.getElementById("sub").textContent =
+      `一啲一次性、非產品嘅小工具同手帳。· 共 ${n} 個小站`;
+  }
+
+  render();
 </script>
 </body>
 </html>
